@@ -6,6 +6,7 @@ import 'views/Home.dart';
 import 'views/Reservation.dart';
 import 'views/Signup.dart';
 import 'views/Upcoming.dart';
+import 'views/VerifyPhoneNumber.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -123,14 +124,12 @@ class _DashboardShellState extends State<DashboardShell> {
   }
 
   void _openSignup() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SignupWidget()),
-    );
+    setState(() => _currentIndex = 2);
   }
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
+    final List<Widget> pages = [
       HomeWidget(
         onSelectSession: _openReservation,
         onOpenUpcoming: () => setState(() => _currentIndex = 1),
@@ -140,6 +139,12 @@ class _DashboardShellState extends State<DashboardShell> {
         onSelectSession: (session) =>
             _openReservation(session, initiallyBooked: true),
         onStartExploring: () => setState(() => _currentIndex = 0),
+      ),
+      SignupWidget(
+        onBack: () => setState(() => _currentIndex = 0),
+      ),
+      VerifyPhoneNumberWidget(
+        onBack: () => setState(() => _currentIndex = 2),
       ),
     ];
 
@@ -160,6 +165,16 @@ class _DashboardShellState extends State<DashboardShell> {
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
             label: 'Upcoming',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_add_alt_1_outlined),
+            selectedIcon: Icon(Icons.person_add_alt_1),
+            label: 'Signup',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.phone_outlined),
+            selectedIcon: Icon(Icons.phone),
+            label: 'Phone',
           ),
         ],
       ),

@@ -236,7 +236,7 @@ class _ReferralBanner extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1D4ED8), Color(0xFF0F172A)],
+          colors: [Color(0xFF6C9A89), Color(0xFF6C9A89)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -258,27 +258,29 @@ class _ReferralBanner extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          Row(
             children: [
               FilledButton(
                 onPressed: onJoinNow,
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF1D4ED8),
-                  minimumSize: const Size(0, 44),
-                ),
-                child: const Text('Join now'),
-              ),
-              OutlinedButton(
-                onPressed: onJoinNow,
-                style: OutlinedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B66F5),
                   foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white30),
-                  minimumSize: const Size(0, 44),
+                  minimumSize: const Size(0, 40),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                child: const Text('Complete profile'),
+                child: const Text('Refer friends'),
+              ),
+              const Spacer(),
+              const Row(
+                children: [
+                  CircleAvatar(radius: 18, backgroundColor: Color(0xFFF8F5ED)),
+                  SizedBox(width: 8),
+                  CircleAvatar(radius: 18, backgroundColor: Color(0xFFF8F5ED)),
+                  SizedBox(width: 8),
+                  CircleAvatar(radius: 18, backgroundColor: Color(0xFFF8F5ED)),
+                ],
               ),
             ],
           ),

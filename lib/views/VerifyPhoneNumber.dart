@@ -6,10 +6,12 @@ class VerifyPhoneNumberWidget extends StatefulWidget {
     super.key,
     this.firstName,
     this.email,
+    this.onBack,
   });
 
   final String? firstName;
   final String? email;
+  final VoidCallback? onBack;
 
   static String routeName = 'VerifyPhoneNumber';
   static String routePath = '/verifyPhoneNumber';
@@ -95,7 +97,8 @@ class _VerifyPhoneNumberWidgetState extends State<VerifyPhoneNumberWidget> {
                 Row(
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
+                      onPressed: widget.onBack ??
+                          () => Navigator.of(context).maybePop(),
                       icon: const Icon(Icons.chevron_left_rounded),
                       tooltip: 'Back',
                     ),
