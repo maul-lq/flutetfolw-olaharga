@@ -1,228 +1,93 @@
-import '/flutter_flow/flutter_flow_theme.dart';
-import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
-import 'upcoming_item_model.dart';
-export 'upcoming_item_model.dart';
+import '../app_data.dart';
 
-class UpcomingItemWidget extends StatefulWidget {
-  const UpcomingItemWidget({super.key});
+class UpcomingItemWidget extends StatelessWidget {
+  const UpcomingItemWidget({
+    super.key,
+    required this.session,
+    this.onTap,
+    this.onInvite,
+    this.onAddToCalendar,
+    this.onShare,
+  });
 
-  @override
-  State<UpcomingItemWidget> createState() => _UpcomingItemWidgetState();
-}
-
-class _UpcomingItemWidgetState extends State<UpcomingItemWidget> {
-  late UpcomingItemModel _model;
-
-  @override
-  void setState(VoidCallback callback) {
-    super.setState(callback);
-    _model.onUpdate();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _model = createModel(context, () => UpcomingItemModel());
-  }
-
-  @override
-  void dispose() {
-    _model.maybeDispose();
-
-    super.dispose();
-  }
+  final FitnessSession session;
+  final VoidCallback? onTap;
+  final VoidCallback? onInvite;
+  final VoidCallback? onAddToCalendar;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).primaryBackground,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: FlutterFlowTheme.of(context).txHintTf,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
+    final theme = Theme.of(context);
+
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  session.imageUrl,
+                  width: double.infinity,
+                  height: 160,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 160,
+                    color: const Color(0xFFE2E8F0),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.image_not_supported_outlined),
+                  ),
+                ),
               ),
-              child: Image.asset(
-                'assets/images/Screenshot_2023-08-29_at_06.51.15.png',
-                width: double.infinity,
-                height: 120,
-                fit: BoxFit.cover,
+              const SizedBox(height: 16),
+              Text(
+                session.title,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800),
               ),
-            ),
-            Padding(
-              padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
+              const SizedBox(height: 6),
+              Text(
+                formatSessionSchedule(session),
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: const Color(0xFF475569)),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                formatStudioLine(session),
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: const Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              Row(
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Full Body',
-                          maxLines: 2,
-                          style: FlutterFlowTheme.of(context)
-                              .headlineSmall
-                              .override(
-                                font: GoogleFonts.inter(
-                                  fontWeight: FlutterFlowTheme.of(context)
-                                      .headlineSmall
-                                      .fontWeight,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .headlineSmall
-                                      .fontStyle,
-                                ),
-                                letterSpacing: 0.0,
-                                fontWeight: FlutterFlowTheme.of(context)
-                                    .headlineSmall
-                                    .fontWeight,
-                                fontStyle: FlutterFlowTheme.of(context)
-                                    .headlineSmall
-                                    .fontStyle,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Tomorrow, Aug 15 - 4:20 PM - 5:10 PM',
-                          style:
-                              FlutterFlowTheme.of(context).bodySmall.override(
-                                    font: GoogleFonts.inter(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .bodySmall
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .bodySmall
-                                          .fontStyle,
-                                    ),
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .bodySmall
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .bodySmall
-                                        .fontStyle,
-                                  ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          '[solidcore] - Ann Arbor',
-                          style:
-                              FlutterFlowTheme.of(context).bodySmall.override(
-                                    font: GoogleFonts.inter(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .bodySmall
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .bodySmall
-                                          .fontStyle,
-                                    ),
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .bodySmall
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .bodySmall
-                                        .fontStyle,
-                                  ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: EdgeInsetsDirectional.fromSTEB(0, 10, 0, 0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Icon(
-                              FFIcons.kuserPlus,
-                              color: FlutterFlowTheme.of(context).primary,
-                              size: 20,
-                            ),
-                            Text(
-                              'Invite friends',
-                              style: FlutterFlowTheme.of(context)
-                                  .titleMedium
-                                  .override(
-                                    font: GoogleFonts.inter(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleMedium
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleMedium
-                                          .fontStyle,
-                                    ),
-                                    color: FlutterFlowTheme.of(context).primary,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .fontStyle,
-                                  ),
-                            ),
-                          ].divide(SizedBox(width: 8)),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Icon(
-                              FFIcons.kheartFilled,
-                              color: FlutterFlowTheme.of(context).primaryText,
-                              size: 20,
-                            ),
-                            Icon(
-                              FFIcons.kcalendarPlus,
-                              color: FlutterFlowTheme.of(context).primaryText,
-                              size: 20,
-                            ),
-                            Icon(
-                              FFIcons.kbrandInstagram,
-                              color: FlutterFlowTheme.of(context).primaryText,
-                              size: 20,
-                            ),
-                          ].divide(SizedBox(width: 16)),
-                        ),
-                      ],
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: onInvite,
+                      icon: const Icon(Icons.person_add_alt_1),
+                      label: const Text('Invite friends'),
                     ),
                   ),
-                ].divide(SizedBox(height: 8)),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    onPressed: onAddToCalendar,
+                    icon: const Icon(Icons.calendar_month_outlined),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    onPressed: onShare,
+                    icon: const Icon(Icons.share_outlined),
+                  ),
+                ],
               ),
-            ),
-          ].divide(SizedBox(height: 12)),
+            ],
+          ),
         ),
       ),
     );

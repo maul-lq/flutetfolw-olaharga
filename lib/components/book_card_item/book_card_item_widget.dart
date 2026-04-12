@@ -1,0 +1,1 @@
+export '../BookCardItem.dart';
