@@ -1,176 +1,309 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '/components/book_card_item/book_card_item_widget.dart';
-import '/components/price_drop_items/price_drop_items_widget.dart';
 import '../app_data.dart';
+import '../fitness_store.dart';
 
 class HomeWidget extends StatelessWidget {
   const HomeWidget({
     super.key,
-    this.onSelectSession,
+    this.onSelectWorkout,
     this.onOpenUpcoming,
     this.onOpenSignup,
+    this.onAddWorkout,
+    this.onAddBodyProgress,
   });
 
   static String routeName = 'Home';
   static String routePath = '/home';
 
-  final ValueChanged<FitnessSession>? onSelectSession;
+  final ValueChanged<WorkoutLog>? onSelectWorkout;
   final VoidCallback? onOpenUpcoming;
   final VoidCallback? onOpenSignup;
+  final VoidCallback? onAddWorkout;
+  final VoidCallback? onAddBodyProgress;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final horizontalSessions = [
-      ...AppData.bookAgainSessions,
-      ...AppData.priceDropSessions,
-    ];
+    final store = context.watch<FitnessStore>();
+
+    if (store.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final profileName = (store.profile?.name.trim().isNotEmpty ?? false)
+        ? store.profile!.name.trim()
+        : 'Athlete';
+    final latestMetric = store.latestBodyMetric;
+    final latestWeightDelta = store.latestWeightDelta;
+    final recentWorkouts = store.workouts.take(3).toList(growable: false);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
       children: [
-        Row(
+        Text(
+          'Manual Fitness Tracker',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Halo, $profileName. Pantau latihan harian dan progress tubuh dari satu dashboard.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: const Color(0xFF64748B),
+          ),
+        ),
+        const SizedBox(height: 20),
+        _QuickActions(
+          onAddWorkout: onAddWorkout,
+          onAddBodyProgress: onAddBodyProgress,
+          onOpenUpcoming: onOpenUpcoming,
+          onOpenProfile: onOpenSignup,
+        ),
+        const SizedBox(height: 22),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.35,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            _MetricCard(
+              title: 'Workout minggu ini',
+              value: '${store.workoutsThisWeek}',
+              subtitle: 'Sesi selesai',
+              icon: Icons.fitness_center,
+            ),
+            _MetricCard(
+              title: 'Durasi latihan',
+              value: '${store.totalMinutesThisWeek} min',
+              subtitle: 'Total minggu ini',
+              icon: Icons.timer_outlined,
+            ),
+            _MetricCard(
+              title: 'Streak',
+              value: '${store.currentStreak} hari',
+              subtitle: 'Konsisten berturut-turut',
+              icon: Icons.local_fire_department_outlined,
+            ),
+            _MetricCard(
+              title: 'BMI',
+              value: store.bmi != null ? store.bmi!.toStringAsFixed(1) : '-',
+              subtitle: 'Berdasar data terakhir',
+              icon: Icons.monitor_heart_outlined,
+            ),
+          ],
+        ),
+        const SizedBox(height: 22),
+        if (latestMetric != null)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
                 children: [
-                  Text(
-                    'For you',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Temukan class favorit, rebook yang paling cocok, dan lanjutkan onboarding akun Anda.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF64748B),
+                  const Icon(Icons.monitor_weight_outlined, size: 30),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Berat terbaru ${latestMetric.weightKg.toStringAsFixed(1)} kg',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          latestWeightDelta == null
+                              ? 'Belum ada pembanding sebelumnya.'
+                              : 'Perubahan ${latestWeightDelta >= 0 ? '+' : ''}${latestWeightDelta.toStringAsFixed(1)} kg dari entry sebelumnya.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            FilledButton.tonalIcon(
-              onPressed: onOpenSignup,
-              icon: const Icon(Icons.person_add_alt_1),
-              label: const Text('Sign up'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _ReferralBanner(onJoinNow: onOpenSignup),
+          ),
         const SizedBox(height: 24),
         _SectionHeader(
-          title: 'Book it again',
-          subtitle:
-              'Kelas yang paling mirip dengan skenario dari template asli.',
-          actionLabel: 'Upcoming',
+          title: 'Workout terakhir',
+          subtitle: 'Buka detail untuk edit, tandai selesai, atau hapus log.',
+          actionLabel: 'Lihat semua',
           onAction: onOpenUpcoming,
         ),
-        const SizedBox(height: 16),
-        _HorizontalSessionStrip(
-          sessions: AppData.bookAgainSessions,
-          onSelectSession: onSelectSession,
-        ),
-        const SizedBox(height: 28),
-        const _SectionHeader(
-          title: 'Price drop!',
-          subtitle: 'Kelas diskon yang tetap bisa langsung dibooking.',
-        ),
-        const SizedBox(height: 16),
-        for (final session in AppData.priceDropSessions) ...[
-          PriceDropItemsWidget(
-            session: session,
-            onTap: () => onSelectSession?.call(session),
-            onBook: () => onSelectSession?.call(session),
-          ),
-          const SizedBox(height: 16),
-        ],
         const SizedBox(height: 12),
-        const _SectionHeader(
-          title: 'Fitness studios nearby',
-          subtitle: 'Kelas populer yang dekat dengan lokasi Anda sekarang.',
-        ),
+        if (recentWorkouts.isEmpty)
+          _EmptyState(
+            title: 'Belum ada workout',
+            subtitle: 'Tambah workout pertama Anda untuk mulai tracking.',
+            cta: 'Tambah workout',
+            onTap: onAddWorkout,
+          )
+        else
+          for (final workout in recentWorkouts) ...[
+            _WorkoutPreviewCard(
+              workout: workout,
+              onTap: () => onSelectWorkout?.call(workout),
+            ),
+            const SizedBox(height: 12),
+          ],
         const SizedBox(height: 16),
-        _HorizontalSessionStrip(
-          sessions: horizontalSessions,
-          onSelectSession: onSelectSession,
-          ctaLabel: 'View class',
-        ),
-        const SizedBox(height: 28),
         const _SectionHeader(
-          title: 'Local gems to discover',
-          subtitle:
-              'Highlight kelas dengan vibe boutique seperti di template awal.',
+          title: 'Quick workout ideas',
+          subtitle: 'Template cepat yang bisa langsung dipakai.',
         ),
-        const SizedBox(height: 16),
-        _HorizontalSessionStrip(
-          sessions: horizontalSessions.reversed.toList(),
-          onSelectSession: onSelectSession,
-          ctaLabel: 'Explore',
+        const SizedBox(height: 12),
+        for (final template in AppData.quickWorkoutTemplates) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE0E7FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.bolt_outlined),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          template.name,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${template.category} · ${formatDurationMinutes(template.durationMinutes)} · ${template.estimatedCalories} kcal',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.tonal(
+                    onPressed: onAddWorkout,
+                    child: const Text('Gunakan'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions({
+    this.onAddWorkout,
+    this.onAddBodyProgress,
+    this.onOpenUpcoming,
+    this.onOpenProfile,
+  });
+
+  final VoidCallback? onAddWorkout;
+  final VoidCallback? onAddBodyProgress;
+  final VoidCallback? onOpenUpcoming;
+  final VoidCallback? onOpenProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        FilledButton.icon(
+          onPressed: onAddWorkout,
+          icon: const Icon(Icons.add_circle_outline),
+          label: const Text('Tambah workout'),
         ),
-        const SizedBox(height: 28),
-        const _SectionHeader(
-          title: 'Save on spa and salon',
-          subtitle:
-              'Section tambahan yang sebelumnya hilang dari layout template.',
+        FilledButton.tonalIcon(
+          onPressed: onAddBodyProgress,
+          icon: const Icon(Icons.monitor_weight_outlined),
+          label: const Text('Tambah progress'),
         ),
-        const SizedBox(height: 16),
-        _HorizontalSessionStrip(
-          sessions: AppData.priceDropSessions,
-          onSelectSession: onSelectSession,
-          ctaLabel: 'See offer',
+        OutlinedButton.icon(
+          onPressed: onOpenUpcoming,
+          icon: const Icon(Icons.list_alt_outlined),
+          label: const Text('Workout log'),
         ),
-        const SizedBox(height: 28),
-        const _SectionHeader(
-          title: 'Newly added',
-          subtitle:
-              'Tambahan terbaru yang menjaga struktur akhir feed tetap mirip template.',
-        ),
-        const SizedBox(height: 16),
-        _HorizontalSessionStrip(
-          sessions: horizontalSessions,
-          onSelectSession: onSelectSession,
-          ctaLabel: 'Try now',
+        OutlinedButton.icon(
+          onPressed: onOpenProfile,
+          icon: const Icon(Icons.person_outline),
+          label: const Text('Setup profil'),
         ),
       ],
     );
   }
 }
 
-class _HorizontalSessionStrip extends StatelessWidget {
-  const _HorizontalSessionStrip({
-    required this.sessions,
-    required this.onSelectSession,
-    this.ctaLabel = 'Book again',
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
   });
 
-  final List<FitnessSession> sessions;
-  final ValueChanged<FitnessSession>? onSelectSession;
-  final String ctaLabel;
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 380,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: sessions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
-        itemBuilder: (context, index) {
-          final session = sessions[index];
-          return SizedBox(
-            width: 240,
-            child: BookCardItemWidget(
-              session: session,
-              ctaLabel: ctaLabel,
-              onTap: () => onSelectSession?.call(session),
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: const Color(0xFF1D4ED8)),
+            const Spacer(),
+            Text(
+              value,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          );
-        },
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -217,74 +350,125 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         if (actionLabel != null)
-          TextButton(onPressed: onAction, child: Text(actionLabel!)),
+          TextButton(
+            onPressed: onAction,
+            child: Text(actionLabel!),
+          ),
       ],
     );
   }
 }
 
-class _ReferralBanner extends StatelessWidget {
-  const _ReferralBanner({this.onJoinNow});
+class _WorkoutPreviewCard extends StatelessWidget {
+  const _WorkoutPreviewCard({required this.workout, this.onTap});
 
-  final VoidCallback? onJoinNow;
+  final WorkoutLog workout;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6C9A89), Color(0xFF6C9A89)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Refer a friend and get \$30',
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Gift your friends 20 bonus credits, lalu lanjutkan flow signup + verifikasi nomor seperti pada template asli.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
-          ),
-          const SizedBox(height: 16),
-          Row(
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
             children: [
-              FilledButton(
-                onPressed: onJoinNow,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B66F5),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(0, 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: workout.isCompleted
+                      ? const Color(0xFFDCFCE7)
+                      : const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Text('Refer friends'),
+                alignment: Alignment.center,
+                child: Icon(
+                  workout.isCompleted
+                      ? Icons.check_circle_outline
+                      : Icons.schedule,
+                  color: workout.isCompleted
+                      ? const Color(0xFF166534)
+                      : const Color(0xFF92400E),
+                ),
               ),
-              const Spacer(),
-              const Row(
-                children: [
-                  CircleAvatar(radius: 18, backgroundColor: Color(0xFFF8F5ED)),
-                  SizedBox(width: 8),
-                  CircleAvatar(radius: 18, backgroundColor: Color(0xFFF8F5ED)),
-                  SizedBox(width: 8),
-                  CircleAvatar(radius: 18, backgroundColor: Color(0xFFF8F5ED)),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      workout.workoutName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${workout.category} · ${formatDurationMinutes(workout.durationMinutes)} · ${formatWorkoutDateTime(workout.date)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right_rounded),
             ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.title,
+    required this.subtitle,
+    required this.cta,
+    this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String cta;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const Icon(Icons.inbox_outlined, size: 36, color: Color(0xFF94A3B8)),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(onPressed: onTap, child: Text(cta)),
+          ],
+        ),
       ),
     );
   }

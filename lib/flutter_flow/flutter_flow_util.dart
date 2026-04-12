@@ -28,9 +28,9 @@ extension FlutterFlowNavigationCompat on BuildContext {
     Widget destination;
     switch (routeName) {
       case 'Reservation':
-        final session =
-            extra is FitnessSession ? extra : AppData.bookAgainSessions.first;
-        destination = ReservationWidget(session: session);
+        destination = ReservationWidget(
+          workout: extra is WorkoutLog ? extra : null,
+        );
       case 'Signup':
         destination = const SignupWidget();
       case 'Upcoming':

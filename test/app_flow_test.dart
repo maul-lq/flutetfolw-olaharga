@@ -1,94 +1,135 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:olahraga/app_data.dart';
+import 'package:olahraga/fitness_store.dart';
 import 'package:olahraga/main.dart';
 import 'package:olahraga/views/reservation.dart';
 import 'package:olahraga/views/signup.dart';
 import 'package:olahraga/views/VerifyPhoneNumber.dart';
 
 void main() {
-  test('formatSessionSchedule returns readable output', () {
-    final session = AppData.bookAgainSessions.first;
-    final label = formatSessionSchedule(session);
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  Future<FitnessStore> createLoadedStore() async {
+    final store = FitnessStore();
+    await store.load();
+    return store;
+  }
+
+  test('formatWorkoutDateTime returns readable output', () {
+    final workout = AppData.seedWorkoutLogs.first;
+    final label = formatWorkoutDateTime(workout.date);
 
     expect(label, isNotEmpty);
-    expect(label, contains(':'));
     expect(label, contains('·'));
   });
 
-  testWidgets('signup flow navigates to verify phone number', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: SignupWidget()));
+  testWidgets('profile setup saves user profile', (tester) async {
+    final store = await createLoadedStore();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'Rizlrad');
-    await tester.enterText(find.byType(TextFormField).at(1), 'Fz');
-    await tester.enterText(
-      find.byType(TextFormField).at(2),
-      'rizlrad@example.com',
-    );
-    await tester.pump();
-
-    final signUpButton = find.widgetWithText(ElevatedButton, 'Sign up');
-    expect(signUpButton, findsOneWidget);
-    expect(tester.widget<ElevatedButton>(signUpButton).onPressed, isNotNull);
-
-    await tester.ensureVisible(signUpButton);
-    await tester.tap(signUpButton);
-    await tester.pumpAndSettle();
-
-    expect(find.byType(VerifyPhoneNumberWidget), findsOneWidget);
-    expect(find.textContaining('rizlrad@example.com'), findsOneWidget);
-  });
-
-  testWidgets('reservation popups update booking state', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: ReservationWidget(session: AppData.bookAgainSessions.first),
+      ChangeNotifierProvider<FitnessStore>.value(
+        value: store,
+        child: const MaterialApp(home: SignupWidget()),
       ),
     );
-
-    expect(find.widgetWithText(FilledButton, 'Reserve'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Reserve'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Checkout'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Confirm reservation'));
+    await tester.enterText(find.byType(TextFormField).at(0), 'Rizlrad');
+    await tester.enterText(find.byType(TextFormField).at(1), '172');
+    await tester.enterText(find.byType(TextFormField).at(2), '5');
+    await tester.enterText(find.byType(TextFormField).at(3), '74.2');
+    await tester.enterText(find.byType(TextFormField).at(4), '69.5');
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Simpan profil'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.widgetWithText(FilledButton, 'Cancel reservation'),
-      findsOneWidget,
-    );
-
-    await tester
-        .tap(find.widgetWithText(FilledButton, 'Cancel reservation').first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Confirm cancellation'), findsOneWidget);
-    await tester.tap(
-      find.widgetWithText(FilledButton, 'Cancel reservation').last,
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.widgetWithText(FilledButton, 'Reserve'), findsOneWidget);
+    expect(store.profile, isNotNull);
+    expect(store.profile!.name, 'Rizlrad');
+    expect(store.profile!.activityGoalPerWeek, 5);
   });
 
-  testWidgets('dashboard tab flow returns from Upcoming to Home',
+  testWidgets('workout editor adds new workout log', (tester) async {
+    final store = await createLoadedStore();
+    final initialCount = store.workouts.length;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<FitnessStore>.value(
+        value: store,
+        child: const MaterialApp(home: ReservationWidget()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Evening HIIT');
+    await tester.enterText(find.byType(TextFormField).at(1), '40');
+    await tester.enterText(find.byType(TextFormField).at(2), '360');
+    await tester.enterText(
+      find.byType(TextFormField).at(3),
+      'Circuit workout after office hours',
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Simpan workout'));
+    await tester.pumpAndSettle();
+
+    expect(store.workouts.length, initialCount + 1);
+    expect(
+      store.workouts.any((item) => item.workoutName == 'Evening HIIT'),
+      isTrue,
+    );
+  });
+
+  testWidgets('body progress entry is persisted', (tester) async {
+    final store = await createLoadedStore();
+    final initialCount = store.bodyMetrics.length;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<FitnessStore>.value(
+        value: store,
+        child: const MaterialApp(home: VerifyPhoneNumberWidget()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), '70.9');
+    await tester.enterText(find.byType(TextFormField).at(1), '171');
+    await tester.enterText(find.byType(TextFormField).at(2), 'Weekly check-in');
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Simpan progress tubuh'));
+    await tester.pumpAndSettle();
+
+    expect(store.bodyMetrics.length, initialCount + 1);
+    expect(store.latestBodyMetric, isNotNull);
+    expect(store.latestBodyMetric!.weightKg, 70.9);
+  });
+
+  testWidgets('dashboard tab navigation opens workout log and back',
       (tester) async {
-    await tester.pumpWidget(const OlahragaApp());
+    final store = await createLoadedStore();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<FitnessStore>.value(
+        value: store,
+        child: const OlahragaApp(),
+      ),
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('For you'), findsOneWidget);
+    expect(find.text('Manual Fitness Tracker'), findsOneWidget);
 
-    await tester.tap(find.text('Upcoming').last);
+    await tester.tap(find.text('Workout Log').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Time to book!'), findsOneWidget);
+    expect(find.text('Workout Log'), findsWidgets);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Start exploring'));
+    await tester.tap(find.text('Dashboard').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('For you'), findsOneWidget);
+    expect(find.text('Manual Fitness Tracker'), findsOneWidget);
   });
 }

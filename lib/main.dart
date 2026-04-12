@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import 'app_data.dart';
+import 'fitness_store.dart';
 import 'views/Home.dart';
 import 'views/Reservation.dart';
 import 'views/Signup.dart';
@@ -10,7 +12,12 @@ import 'views/VerifyPhoneNumber.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const OlahragaApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => FitnessStore()..load(),
+      child: const OlahragaApp(),
+    ),
+  );
 }
 
 class OlahragaApp extends StatelessWidget {
@@ -26,7 +33,7 @@ class OlahragaApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Olahraga',
+      title: 'Manual Fitness Tracker',
       theme: baseTheme.copyWith(
         textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
         appBarTheme: const AppBarTheme(
@@ -111,42 +118,46 @@ class DashboardShell extends StatefulWidget {
 class _DashboardShellState extends State<DashboardShell> {
   int _currentIndex = 0;
 
-  void _openReservation(FitnessSession session,
-      {bool initiallyBooked = false}) {
+  Future<void> _openWorkoutDetail([WorkoutLog? workout]) async {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ReservationWidget(
-          session: session,
-          initiallyBooked: initiallyBooked,
-        ),
+        builder: (_) => ReservationWidget(workout: workout),
       ),
     );
   }
 
-  void _openSignup() {
+  void _openProfileSetup() {
     setState(() => _currentIndex = 2);
+  }
+
+  void _openBodyProgress() {
+    setState(() => _currentIndex = 3);
   }
 
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       HomeWidget(
-        onSelectSession: _openReservation,
+        onSelectWorkout: (workout) => _openWorkoutDetail(workout),
+        onAddWorkout: () => _openWorkoutDetail(),
+        onAddBodyProgress: _openBodyProgress,
         onOpenUpcoming: () => setState(() => _currentIndex = 1),
-        onOpenSignup: _openSignup,
+        onOpenSignup: _openProfileSetup,
       ),
       UpcomingWidget(
-        onSelectSession: (session) =>
-            _openReservation(session, initiallyBooked: true),
+        onSelectWorkout: (workout) => _openWorkoutDetail(workout),
+        onAddWorkout: () => _openWorkoutDetail(),
         onStartExploring: () => setState(() => _currentIndex = 0),
       ),
       SignupWidget(
         onBack: () => setState(() => _currentIndex = 0),
       ),
       VerifyPhoneNumberWidget(
-        onBack: () => setState(() => _currentIndex = 2),
+        onBack: () => setState(() => _currentIndex = 0),
       ),
     ];
+
+    final labels = ['Dashboard', 'Workout Log', 'Profile', 'Body Progress'];
 
     return Scaffold(
       body: SafeArea(
@@ -155,26 +166,26 @@ class _DashboardShellState extends State<DashboardShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: labels[0],
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Upcoming',
+            icon: const Icon(Icons.calendar_month_outlined),
+            selectedIcon: const Icon(Icons.calendar_month),
+            label: labels[1],
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_add_alt_1_outlined),
-            selectedIcon: Icon(Icons.person_add_alt_1),
-            label: 'Signup',
+            icon: const Icon(Icons.person_add_alt_1_outlined),
+            selectedIcon: const Icon(Icons.person_add_alt_1),
+            label: labels[2],
           ),
           NavigationDestination(
-            icon: Icon(Icons.phone_outlined),
-            selectedIcon: Icon(Icons.phone),
-            label: 'Phone',
+            icon: const Icon(Icons.monitor_weight_outlined),
+            selectedIcon: const Icon(Icons.monitor_weight),
+            label: labels[3],
           ),
         ],
       ),

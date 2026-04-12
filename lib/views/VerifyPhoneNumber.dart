@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../app_data.dart';
+import '../fitness_store.dart';
 
 class VerifyPhoneNumberWidget extends StatefulWidget {
   const VerifyPhoneNumberWidget({
@@ -23,66 +26,50 @@ class VerifyPhoneNumberWidget extends StatefulWidget {
 
 class _VerifyPhoneNumberWidgetState extends State<VerifyPhoneNumberWidget> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _heightController = TextEditingController();
+  final _noteController = TextEditingController();
 
-  static const List<_CountryOption> _countryOptions = [
-    _CountryOption(code: '+1', label: 'United States'),
-    _CountryOption(code: '+62', label: 'Indonesia'),
-    _CountryOption(code: '+90', label: 'Turkey'),
-    _CountryOption(code: '+46', label: 'Sweden'),
-  ];
-
-  String _selectedCode = _countryOptions.first.code;
-
-  bool get _canSend => _phoneController.text.trim().length >= 7;
+  DateTime _selectedDate = DateTime.now();
+  bool _didSeedInitialValues = false;
 
   @override
-  void initState() {
-    super.initState();
-    _phoneController.addListener(_handleFieldChange);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didSeedInitialValues) {
+      return;
+    }
+
+    final store = context.read<FitnessStore>();
+    final latestMetric = store.latestBodyMetric;
+    final profile = store.profile;
+
+    if (latestMetric != null) {
+      _weightController.text = latestMetric.weightKg.toStringAsFixed(1);
+      _heightController.text = latestMetric.heightCm.toStringAsFixed(0);
+    } else if (profile != null) {
+      _weightController.text = profile.initialWeightKg.toStringAsFixed(1);
+      _heightController.text = profile.heightCm.toStringAsFixed(0);
+    } else {
+      _heightController.text = '170';
+    }
+
+    _didSeedInitialValues = true;
   }
 
   @override
   void dispose() {
-    _phoneController
-      ..removeListener(_handleFieldChange)
-      ..dispose();
+    _weightController.dispose();
+    _heightController.dispose();
+    _noteController.dispose();
     super.dispose();
-  }
-
-  void _handleFieldChange() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _sendConfirmationCode() {
-    FocusScope.of(context).unfocus();
-
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-
-    final phoneNumber = '$_selectedCode ${_phoneController.text.trim()}';
-    final greetingName = widget.firstName?.trim().isNotEmpty == true
-        ? widget.firstName!.trim()
-        : 'there';
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Confirmation code sent to $phoneNumber for $greetingName.',
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final hasProfileSummary = (widget.firstName?.trim().isNotEmpty ?? false) ||
-        (widget.email?.trim().isNotEmpty ?? false);
+    final store = context.watch<FitnessStore>();
+    final latestMetric = store.latestBodyMetric;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -97,263 +84,140 @@ class _VerifyPhoneNumberWidgetState extends State<VerifyPhoneNumberWidget> {
                 Row(
                   children: [
                     IconButton(
-                      onPressed: widget.onBack ??
-                          () => Navigator.of(context).maybePop(),
+                      onPressed:
+                          widget.onBack ?? () => Navigator.of(context).maybePop(),
                       icon: const Icon(Icons.chevron_left_rounded),
                       tooltip: 'Back',
                     ),
-                    const Expanded(
-                      child: Text(
-                        'Complete account setup',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF101828),
-                        ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Body Progress Entry',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(width: 48),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFEAECF0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F1FF),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Icon(
-                          Icons.sms_outlined,
-                          color: colorScheme.primary,
-                          size: 34,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Verify your phone number',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF101828),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'To finish setting up your account, we\'ll need to send you a confirmation code.',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF667085),
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 10),
+                Text(
+                  'Catat berat dan tinggi tubuh terbaru untuk melihat tren progress di dashboard.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF64748B),
                   ),
                 ),
-                if (hasProfileSummary) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEEF4FF),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFD0D5DD)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Account summary',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF101828),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        if (widget.firstName?.trim().isNotEmpty ?? false)
-                          Text(
-                            'First name: ${widget.firstName!.trim()}',
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        if (widget.email?.trim().isNotEmpty ?? false)
-                          Padding(
-                            padding: EdgeInsets.only(
-                              top:
-                                  (widget.firstName?.trim().isNotEmpty ?? false)
-                                      ? 6
-                                      : 0,
-                            ),
+                const SizedBox(height: 14),
+                if (latestMetric != null)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.insights_outlined),
+                          const SizedBox(width: 10),
+                          Expanded(
                             child: Text(
-                              'Email: ${widget.email!.trim()}',
+                              'Entry terakhir: ${latestMetric.weightKg.toStringAsFixed(1)} kg · ${formatWorkoutDate(latestMetric.date)}',
                               style: theme.textTheme.bodyMedium,
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ],
-                const SizedBox(height: 20),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFEAECF0)),
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Phone details',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF101828),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Masukkan kode negara dan nomor ponsel aktif untuk menerima kode konfirmasi.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF667085),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isWide = constraints.maxWidth >= 420;
-                            final codeField = DropdownButtonFormField<String>(
-                              isExpanded: true,
-                              initialValue: _selectedCode,
-                              decoration: _inputDecoration(
-                                context,
-                                label: 'Code',
-                              ),
-                              items: _countryOptions
-                                  .map(
-                                    (option) => DropdownMenuItem<String>(
-                                      value: option.code,
-                                      child: Text(
-                                        option.code,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                if (value == null) {
-                                  return;
-                                }
-                                setState(() {
-                                  _selectedCode = value;
-                                });
-                              },
-                            );
-
-                            final phoneField = TextFormField(
-                              controller: _phoneController,
-                              keyboardType: TextInputType.phone,
-                              textInputAction: TextInputAction.done,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              decoration: _inputDecoration(
-                                context,
-                                label: 'Phone number',
-                                hintText: '81234567890',
-                              ),
-                              validator: (value) {
-                                final digits = value?.trim() ?? '';
-                                if (digits.isEmpty) {
-                                  return 'Phone number wajib diisi';
-                                }
-                                if (digits.length < 7) {
-                                  return 'Phone number minimal 7 digit';
-                                }
-                                return null;
-                              },
-                              onFieldSubmitted: (_) {
-                                if (_canSend) {
-                                  _sendConfirmationCode();
-                                }
-                              },
-                            );
-
-                            if (!isWide) {
-                              return Column(
-                                children: [
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: codeField,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  phoneField,
-                                ],
-                              );
-                            }
-
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(flex: 4, child: codeField),
-                                const SizedBox(width: 16),
-                                Expanded(flex: 7, child: phoneField),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _canSend ? _sendConfirmationCode : null,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(0, 52),
-                              backgroundColor: colorScheme.primary,
-                              foregroundColor: colorScheme.onPrimary,
-                              disabledBackgroundColor: const Color(0xFFE4E7EC),
-                              disabledForegroundColor: const Color(0xFF98A2B3),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
+                const SizedBox(height: 12),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Data tubuh',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
-                            child: const Text('Send confirmation code'),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    'By providing your phone number, you agree that it may be used to send you text messages about reservation changes. Standard message and data rates may apply. You can contact us or reply STOP to the text to opt out.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF667085),
-                      height: 1.5,
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _weightController,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                  decoration: _inputDecoration(
+                                    context,
+                                    label: 'Berat (kg)',
+                                    hintText: '71.8',
+                                  ),
+                                  validator: (value) {
+                                    final number =
+                                        double.tryParse(value?.trim() ?? '');
+                                    if (number == null || number <= 0) {
+                                      return 'Berat tidak valid';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _heightController,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                  decoration: _inputDecoration(
+                                    context,
+                                    label: 'Tinggi (cm)',
+                                    hintText: '171',
+                                  ),
+                                  validator: (value) {
+                                    final number =
+                                        double.tryParse(value?.trim() ?? '');
+                                    if (number == null || number <= 0) {
+                                      return 'Tinggi tidak valid';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: _pickDate,
+                            icon: const Icon(Icons.calendar_today_outlined),
+                            label: Text(formatWorkoutDate(_selectedDate)),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _noteController,
+                            minLines: 3,
+                            maxLines: 5,
+                            decoration: _inputDecoration(
+                              context,
+                              label: 'Catatan (opsional)',
+                              hintText:
+                                  'Contoh: tidur lebih cukup, latihan terasa lebih ringan.',
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: _saveEntry,
+                              icon: const Icon(Icons.save_outlined),
+                              label: const Text('Simpan progress tubuh'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -362,6 +226,54 @@ class _VerifyPhoneNumberWidgetState extends State<VerifyPhoneNumberWidget> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+
+    if (date == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        _selectedDate.hour,
+        _selectedDate.minute,
+      );
+    });
+  }
+
+  Future<void> _saveEntry() async {
+    FocusScope.of(context).unfocus();
+
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final entry = BodyMetricEntry(
+      id: 'metric-${DateTime.now().microsecondsSinceEpoch}',
+      date: _selectedDate,
+      weightKg: double.parse(_weightController.text.trim()),
+      heightCm: double.parse(_heightController.text.trim()),
+      note: _noteController.text.trim(),
+    );
+
+    await context.read<FitnessStore>().addBodyMetric(entry);
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Body progress berhasil disimpan.')),
     );
   }
 
@@ -398,14 +310,4 @@ class _VerifyPhoneNumberWidgetState extends State<VerifyPhoneNumberWidget> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
-}
-
-class _CountryOption {
-  const _CountryOption({
-    required this.code,
-    required this.label,
-  });
-
-  final String code;
-  final String label;
 }

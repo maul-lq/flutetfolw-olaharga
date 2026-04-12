@@ -1,5 +1,229 @@
 import 'package:intl/intl.dart';
 
+enum WorkoutIntensity { low, medium, high }
+
+extension WorkoutIntensityLabel on WorkoutIntensity {
+  String get label {
+    switch (this) {
+      case WorkoutIntensity.low:
+        return 'Low';
+      case WorkoutIntensity.medium:
+        return 'Medium';
+      case WorkoutIntensity.high:
+        return 'High';
+    }
+  }
+
+  static WorkoutIntensity fromLabel(String value) {
+    return WorkoutIntensity.values.firstWhere(
+      (item) => item.label.toLowerCase() == value.toLowerCase(),
+      orElse: () => WorkoutIntensity.medium,
+    );
+  }
+}
+
+class WorkoutLog {
+  const WorkoutLog({
+    required this.id,
+    required this.date,
+    required this.workoutName,
+    required this.category,
+    required this.durationMinutes,
+    required this.caloriesBurnedEstimate,
+    required this.notes,
+    required this.intensity,
+    required this.isCompleted,
+  });
+
+  final String id;
+  final DateTime date;
+  final String workoutName;
+  final String category;
+  final int durationMinutes;
+  final int caloriesBurnedEstimate;
+  final String notes;
+  final WorkoutIntensity intensity;
+  final bool isCompleted;
+
+  WorkoutLog copyWith({
+    String? id,
+    DateTime? date,
+    String? workoutName,
+    String? category,
+    int? durationMinutes,
+    int? caloriesBurnedEstimate,
+    String? notes,
+    WorkoutIntensity? intensity,
+    bool? isCompleted,
+  }) {
+    return WorkoutLog(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      workoutName: workoutName ?? this.workoutName,
+      category: category ?? this.category,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      caloriesBurnedEstimate:
+          caloriesBurnedEstimate ?? this.caloriesBurnedEstimate,
+      notes: notes ?? this.notes,
+      intensity: intensity ?? this.intensity,
+      isCompleted: isCompleted ?? this.isCompleted,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'date': date.toIso8601String(),
+      'workoutName': workoutName,
+      'category': category,
+      'durationMinutes': durationMinutes,
+      'caloriesBurnedEstimate': caloriesBurnedEstimate,
+      'notes': notes,
+      'intensity': intensity.name,
+      'isCompleted': isCompleted,
+    };
+  }
+
+  factory WorkoutLog.fromMap(Map<String, dynamic> map) {
+    return WorkoutLog(
+      id: map['id'] as String,
+      date: DateTime.parse(map['date'] as String),
+      workoutName: map['workoutName'] as String,
+      category: map['category'] as String,
+      durationMinutes: (map['durationMinutes'] as num).toInt(),
+      caloriesBurnedEstimate: (map['caloriesBurnedEstimate'] as num).toInt(),
+      notes: (map['notes'] as String?) ?? '',
+      intensity: WorkoutIntensity.values.firstWhere(
+        (value) => value.name == map['intensity'],
+        orElse: () => WorkoutIntensity.medium,
+      ),
+      isCompleted: (map['isCompleted'] as bool?) ?? false,
+    );
+  }
+}
+
+class BodyMetricEntry {
+  const BodyMetricEntry({
+    required this.id,
+    required this.date,
+    required this.weightKg,
+    required this.heightCm,
+    required this.note,
+  });
+
+  final String id;
+  final DateTime date;
+  final double weightKg;
+  final double heightCm;
+  final String note;
+
+  BodyMetricEntry copyWith({
+    String? id,
+    DateTime? date,
+    double? weightKg,
+    double? heightCm,
+    String? note,
+  }) {
+    return BodyMetricEntry(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      weightKg: weightKg ?? this.weightKg,
+      heightCm: heightCm ?? this.heightCm,
+      note: note ?? this.note,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'date': date.toIso8601String(),
+      'weightKg': weightKg,
+      'heightCm': heightCm,
+      'note': note,
+    };
+  }
+
+  factory BodyMetricEntry.fromMap(Map<String, dynamic> map) {
+    return BodyMetricEntry(
+      id: map['id'] as String,
+      date: DateTime.parse(map['date'] as String),
+      weightKg: (map['weightKg'] as num).toDouble(),
+      heightCm: (map['heightCm'] as num).toDouble(),
+      note: (map['note'] as String?) ?? '',
+    );
+  }
+}
+
+class UserProfile {
+  const UserProfile({
+    required this.name,
+    required this.heightCm,
+    required this.targetWeightKg,
+    required this.activityGoalPerWeek,
+    required this.initialWeightKg,
+  });
+
+  final String name;
+  final double heightCm;
+  final double targetWeightKg;
+  final int activityGoalPerWeek;
+  final double initialWeightKg;
+
+  UserProfile copyWith({
+    String? name,
+    double? heightCm,
+    double? targetWeightKg,
+    int? activityGoalPerWeek,
+    double? initialWeightKg,
+  }) {
+    return UserProfile(
+      name: name ?? this.name,
+      heightCm: heightCm ?? this.heightCm,
+      targetWeightKg: targetWeightKg ?? this.targetWeightKg,
+      activityGoalPerWeek: activityGoalPerWeek ?? this.activityGoalPerWeek,
+      initialWeightKg: initialWeightKg ?? this.initialWeightKg,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'heightCm': heightCm,
+      'targetWeightKg': targetWeightKg,
+      'activityGoalPerWeek': activityGoalPerWeek,
+      'initialWeightKg': initialWeightKg,
+    };
+  }
+
+  factory UserProfile.fromMap(Map<String, dynamic> map) {
+    return UserProfile(
+      name: map['name'] as String,
+      heightCm: (map['heightCm'] as num).toDouble(),
+      targetWeightKg: (map['targetWeightKg'] as num).toDouble(),
+      activityGoalPerWeek: (map['activityGoalPerWeek'] as num).toInt(),
+      initialWeightKg: (map['initialWeightKg'] as num).toDouble(),
+    );
+  }
+}
+
+class WorkoutTemplate {
+  const WorkoutTemplate({
+    required this.name,
+    required this.category,
+    required this.durationMinutes,
+    required this.estimatedCalories,
+    required this.intensity,
+    this.notes = '',
+  });
+
+  final String name;
+  final String category;
+  final int durationMinutes;
+  final int estimatedCalories;
+  final WorkoutIntensity intensity;
+  final String notes;
+}
+
 class FitnessSession {
   const FitnessSession({
     required this.id,
@@ -54,6 +278,26 @@ class FitnessSession {
   }
 }
 
+String formatWorkoutDate(DateTime date) {
+  return DateFormat('EEE, d MMM yyyy').format(date);
+}
+
+String formatWorkoutDateTime(DateTime date) {
+  return DateFormat('EEE, d MMM · HH:mm').format(date);
+}
+
+String formatDurationMinutes(int minutes) {
+  if (minutes < 60) {
+    return '$minutes min';
+  }
+  final hours = minutes ~/ 60;
+  final remainder = minutes % 60;
+  if (remainder == 0) {
+    return '$hours h';
+  }
+  return '$hours h $remainder min';
+}
+
 String formatSessionSchedule(FitnessSession session) {
   final dayLabel = _relativeDay(session.startTime);
   final dateLabel = DateFormat('MMM d').format(session.startTime);
@@ -85,6 +329,101 @@ class AppData {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day + dayOffset, hour, minute);
   }
+
+  static const List<String> workoutCategories = [
+    'Strength',
+    'Cardio',
+    'Mobility',
+    'Yoga',
+    'HIIT',
+    'Core',
+    'Recovery',
+  ];
+
+  static const List<WorkoutTemplate> quickWorkoutTemplates = [
+    WorkoutTemplate(
+      name: 'Full Body Strength',
+      category: 'Strength',
+      durationMinutes: 50,
+      estimatedCalories: 420,
+      intensity: WorkoutIntensity.high,
+    ),
+    WorkoutTemplate(
+      name: 'Morning Run',
+      category: 'Cardio',
+      durationMinutes: 30,
+      estimatedCalories: 260,
+      intensity: WorkoutIntensity.medium,
+    ),
+    WorkoutTemplate(
+      name: 'Mobility Reset',
+      category: 'Mobility',
+      durationMinutes: 20,
+      estimatedCalories: 95,
+      intensity: WorkoutIntensity.low,
+    ),
+  ];
+
+  static final List<WorkoutLog> seedWorkoutLogs = [
+    WorkoutLog(
+      id: 'workout-seed-1',
+      date: _slot(-1, 18, 30),
+      workoutName: 'Upper Body Push Day',
+      category: 'Strength',
+      durationMinutes: 55,
+      caloriesBurnedEstimate: 410,
+      notes: 'Bench press, incline DB press, shoulder press.',
+      intensity: WorkoutIntensity.high,
+      isCompleted: true,
+    ),
+    WorkoutLog(
+      id: 'workout-seed-2',
+      date: _slot(-3, 7, 0),
+      workoutName: 'Tempo Run',
+      category: 'Cardio',
+      durationMinutes: 35,
+      caloriesBurnedEstimate: 300,
+      notes: 'Easy pace + 4 x 3 min tempo block.',
+      intensity: WorkoutIntensity.medium,
+      isCompleted: true,
+    ),
+    WorkoutLog(
+      id: 'workout-seed-3',
+      date: _slot(1, 19, 0),
+      workoutName: 'Core and Mobility',
+      category: 'Mobility',
+      durationMinutes: 30,
+      caloriesBurnedEstimate: 140,
+      notes: 'Plank circuit and hip opener routine.',
+      intensity: WorkoutIntensity.low,
+      isCompleted: false,
+    ),
+  ];
+
+  static final List<BodyMetricEntry> seedBodyMetrics = [
+    BodyMetricEntry(
+      id: 'metric-seed-1',
+      date: _slot(-7, 7, 15),
+      weightKg: 72.4,
+      heightCm: 171,
+      note: 'Baseline minggu ini.',
+    ),
+    BodyMetricEntry(
+      id: 'metric-seed-2',
+      date: _slot(-1, 7, 20),
+      weightKg: 71.9,
+      heightCm: 171,
+      note: 'Lebih konsisten cardio.',
+    ),
+  ];
+
+  static const UserProfile seedProfile = UserProfile(
+    name: 'Athlete',
+    heightCm: 171,
+    targetWeightKg: 69,
+    activityGoalPerWeek: 4,
+    initialWeightKg: 72.4,
+  );
 
   static final List<FitnessSession> bookAgainSessions = [
     FitnessSession(
@@ -207,5 +546,5 @@ class AppData {
     ),
   ];
 
-  static final List<String> phoneCountryCodes = ['+1', '+62', '+65', '+66'];
+  static const List<String> phoneCountryCodes = ['+1', '+62', '+65', '+66'];
 }

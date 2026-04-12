@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'VerifyPhoneNumber.dart';
+import '../app_data.dart';
+import '../fitness_store.dart';
 
 class SignupWidget extends StatefulWidget {
   const SignupWidget({super.key, this.onBack});
@@ -16,70 +18,40 @@ class SignupWidget extends StatefulWidget {
 
 class _SignupWidgetState extends State<SignupWidget> {
   final _formKey = GlobalKey<FormState>();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _heightController = TextEditingController();
+  final _initialWeightController = TextEditingController();
+  final _targetWeightController = TextEditingController();
+  final _goalController = TextEditingController();
 
-  static final RegExp _emailPattern =
-      RegExp('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+', caseSensitive: false);
-
-  bool get _canSubmit {
-    return _firstNameController.text.trim().isNotEmpty &&
-        _lastNameController.text.trim().isNotEmpty &&
-        _emailPattern.hasMatch(_emailController.text.trim());
-  }
+  bool _didSeedInitialValues = false;
 
   @override
-  void initState() {
-    super.initState();
-    _firstNameController.addListener(_handleFieldChange);
-    _lastNameController.addListener(_handleFieldChange);
-    _emailController.addListener(_handleFieldChange);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didSeedInitialValues) {
+      return;
+    }
+
+    final profile = context.read<FitnessStore>().profile;
+    final source = profile ?? AppData.seedProfile;
+
+    _nameController.text = source.name;
+    _heightController.text = source.heightCm.toStringAsFixed(0);
+    _initialWeightController.text = source.initialWeightKg.toStringAsFixed(1);
+    _targetWeightController.text = source.targetWeightKg.toStringAsFixed(1);
+    _goalController.text = '${source.activityGoalPerWeek}';
+    _didSeedInitialValues = true;
   }
 
   @override
   void dispose() {
-    _firstNameController
-      ..removeListener(_handleFieldChange)
-      ..dispose();
-    _lastNameController
-      ..removeListener(_handleFieldChange)
-      ..dispose();
-    _emailController
-      ..removeListener(_handleFieldChange)
-      ..dispose();
+    _nameController.dispose();
+    _heightController.dispose();
+    _initialWeightController.dispose();
+    _targetWeightController.dispose();
+    _goalController.dispose();
     super.dispose();
-  }
-
-  void _handleFieldChange() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _showComingSoon(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$provider sign-up belum tersedia di build ini.'),
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    FocusScope.of(context).unfocus();
-
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => VerifyPhoneNumberWidget(
-          firstName: _firstNameController.text.trim(),
-          email: _emailController.text.trim(),
-        ),
-      ),
-    );
   }
 
   @override
@@ -93,162 +65,170 @@ class _SignupWidgetState extends State<SignupWidget> {
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                IconButton(
-                  onPressed:
-                      widget.onBack ?? () => Navigator.of(context).maybePop(),
-                  icon: const Icon(Icons.chevron_left_rounded),
-                  tooltip: 'Back',
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sign up',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF101828),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                OutlinedButton.icon(
-                  onPressed: () => _showComingSoon('Apple'),
-                  icon: const Icon(Icons.apple),
-                  label: const Text('Continue with Apple'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 54),
-                    side: const BorderSide(color: Color(0xFF111827)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    backgroundColor: const Color(0xFF111827),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    'If you sign up through Apple, you agree to the Terms of Use and Privacy Notice.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF667085),
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isWide = constraints.maxWidth >= 440;
-                          final firstNameField = _AppTextField(
-                            controller: _firstNameController,
-                            label: 'First name',
-                            hintText: 'First name',
-                            textInputAction: TextInputAction.next,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'First name wajib diisi';
-                              }
-                              return null;
-                            },
-                          );
-                          final lastNameField = _AppTextField(
-                            controller: _lastNameController,
-                            label: 'Last name',
-                            hintText: 'Last name',
-                            textInputAction: TextInputAction.next,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Last name wajib diisi';
-                              }
-                              return null;
-                            },
-                          );
-
-                          if (!isWide) {
-                            return Column(
-                              children: [
-                                firstNameField,
-                                const SizedBox(height: 16),
-                                lastNameField,
-                              ],
-                            );
-                          }
-
-                          return Row(
-                            children: [
-                              Expanded(child: firstNameField),
-                              const SizedBox(width: 16),
-                              Expanded(child: lastNameField),
-                            ],
-                          );
-                        },
+                      IconButton(
+                        onPressed: widget.onBack ?? () => Navigator.of(context).maybePop(),
+                        icon: const Icon(Icons.chevron_left_rounded),
+                        tooltip: 'Back',
                       ),
-                      const SizedBox(height: 16),
-                      _AppTextField(
-                        controller: _emailController,
-                        label: 'Email address',
-                        hintText: 'Email address',
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.done,
-                        validator: (value) {
-                          final email = value?.trim() ?? '';
-                          if (email.isEmpty) {
-                            return 'Email wajib diisi';
-                          }
-                          if (!_emailPattern.hasMatch(email)) {
-                            return 'Masukkan email yang valid';
-                          }
-                          return null;
-                        },
-                        onSubmitted: (_) {
-                          if (_canSubmit) {
-                            _submit();
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _canSubmit ? _submit : null,
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(0, 52),
-                            backgroundColor: const Color(0xFFE5E7EB),
-                            foregroundColor: const Color(0xFF9CA3AF),
-                            disabledBackgroundColor: const Color(0xFFE5E7EB),
-                            disabledForegroundColor: const Color(0xFF9CA3AF),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('Sign up'),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Profile Setup',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    'By signing up you agree to our Terms of Use and Privacy Notice.',
+                  const SizedBox(height: 10),
+                  Text(
+                    'Isi profil dasar Anda untuk personalisasi ringkasan fitness tracker.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _AppTextField(
+                    controller: _nameController,
+                    label: 'Nama user',
+                    hintText: 'Contoh: Rizlrad',
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Nama wajib diisi';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _AppTextField(
+                          controller: _heightController,
+                          label: 'Tinggi (cm)',
+                          hintText: '171',
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            final number = double.tryParse(value?.trim() ?? '');
+                            if (number == null || number <= 0) {
+                              return 'Tinggi tidak valid';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _AppTextField(
+                          controller: _goalController,
+                          label: 'Goal / minggu',
+                          hintText: '4',
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            final number = int.tryParse(value?.trim() ?? '');
+                            if (number == null || number <= 0) {
+                              return 'Goal tidak valid';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _AppTextField(
+                          controller: _initialWeightController,
+                          label: 'Berat awal (kg)',
+                          hintText: '72.0',
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          validator: (value) {
+                            final number = double.tryParse(value?.trim() ?? '');
+                            if (number == null || number <= 0) {
+                              return 'Berat awal tidak valid';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _AppTextField(
+                          controller: _targetWeightController,
+                          label: 'Target berat (kg)',
+                          hintText: '69.0',
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          validator: (value) {
+                            final number = double.tryParse(value?.trim() ?? '');
+                            if (number == null || number <= 0) {
+                              return 'Target tidak valid';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _saveProfile,
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('Simpan profil'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Setelah profil disimpan, Anda bisa pindah ke tab Body Progress untuk mencatat berat terbaru.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: const Color(0xFF667085),
                       height: 1.5,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _saveProfile() async {
+    FocusScope.of(context).unfocus();
+
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final profile = UserProfile(
+      name: _nameController.text.trim(),
+      heightCm: double.parse(_heightController.text.trim()),
+      targetWeightKg: double.parse(_targetWeightController.text.trim()),
+      activityGoalPerWeek: int.parse(_goalController.text.trim()),
+      initialWeightKg: double.parse(_initialWeightController.text.trim()),
+    );
+
+    await context.read<FitnessStore>().saveProfile(profile);
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profil berhasil disimpan.')),
     );
   }
 }
@@ -259,27 +239,21 @@ class _AppTextField extends StatelessWidget {
     required this.label,
     required this.hintText,
     this.keyboardType,
-    this.textInputAction,
     this.validator,
-    this.onSubmitted,
   });
 
   final TextEditingController controller;
   final String label;
   final String hintText;
   final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
   final FormFieldValidator<String>? validator;
-  final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      textInputAction: textInputAction,
       validator: validator,
-      onFieldSubmitted: onSubmitted,
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
