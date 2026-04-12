@@ -38,6 +38,8 @@ class HomeWidget extends StatelessWidget {
     final latestMetric = store.latestBodyMetric;
     final latestWeightDelta = store.latestWeightDelta;
     final recentWorkouts = store.workouts.take(3).toList(growable: false);
+    final metricHistory = store.bodyMetrics.take(8).toList(growable: false)
+      ..sort((a, b) => a.date.compareTo(b.date));
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
@@ -132,6 +134,8 @@ class HomeWidget extends StatelessWidget {
               ),
             ),
           ),
+        const SizedBox(height: 12),
+        _ProgressChartCard(metricHistory: metricHistory),
         const SizedBox(height: 24),
         _SectionHeader(
           title: 'Workout terakhir',
@@ -211,6 +215,222 @@ class HomeWidget extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+class _ProgressChartCard extends StatelessWidget {
+  const _ProgressChartCard({required this.metricHistory});
+
+  final List<BodyMetricEntry> metricHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (metricHistory.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final weights = metricHistory.map((entry) => entry.weightKg).toList();
+    final bmiValues = metricHistory
+        .where((entry) => entry.heightCm > 0)
+        .map((entry) {
+          final heightMeter = entry.heightCm / 100;
+          return entry.weightKg / (heightMeter * heightMeter);
+        })
+        .toList();
+
+    final first = metricHistory.first;
+    final latest = metricHistory.last;
+    final weightDelta = latest.weightKg - first.weightKg;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Trend berat dan BMI',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Dari ${formatWorkoutDate(first.date)} ke ${formatWorkoutDate(latest.date)} · ${weightDelta >= 0 ? '+' : ''}${weightDelta.toStringAsFixed(1)} kg',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _SparklineSection(
+              title: 'Berat (kg)',
+              latestLabel:
+                  '${weights.last.toStringAsFixed(1)} kg${weights.length > 1 ? ' · ${weights.first.toStringAsFixed(1)} kg awal' : ''}',
+              values: weights,
+              color: const Color(0xFF2563EB),
+            ),
+            const SizedBox(height: 10),
+            _SparklineSection(
+              title: 'BMI',
+              latestLabel: bmiValues.isEmpty
+                  ? 'Belum cukup data BMI'
+                  : '${bmiValues.last.toStringAsFixed(1)}${bmiValues.length > 1 ? ' · ${bmiValues.first.toStringAsFixed(1)} awal' : ''}',
+              values: bmiValues,
+              color: const Color(0xFFE11D48),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SparklineSection extends StatelessWidget {
+  const _SparklineSection({
+    required this.title,
+    required this.latestLabel,
+    required this.values,
+    required this.color,
+  });
+
+  final String title;
+  final String latestLabel;
+  final List<double> values;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                latestLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (values.length < 2)
+            Text(
+              'Tambahkan minimal 2 entry untuk melihat trend.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF64748B),
+              ),
+            )
+          else
+            SizedBox(
+              height: 70,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _SparklinePainter(values: values, color: color),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SparklinePainter extends CustomPainter {
+  const _SparklinePainter({
+    required this.values,
+    required this.color,
+  });
+
+  final List<double> values;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2) {
+      return;
+    }
+
+    var minValue = values.first;
+    var maxValue = values.first;
+    for (final value in values) {
+      if (value < minValue) {
+        minValue = value;
+      }
+      if (value > maxValue) {
+        maxValue = value;
+      }
+    }
+
+    final range = maxValue - minValue;
+    final path = Path();
+    for (var i = 0; i < values.length; i++) {
+      final x = (size.width / (values.length - 1)) * i;
+      final normalized = range == 0 ? 0.5 : (values[i] - minValue) / range;
+      final y = size.height - (normalized * (size.height - 12)) - 6;
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawPath(path, paint);
+
+    final markerPaint = Paint()..color = color;
+    final firstPoint = Offset(
+      0,
+      size.height - ((range == 0 ? 0.5 : (values.first - minValue) / range) * (size.height - 12)) - 6,
+    );
+    final lastPoint = Offset(
+      size.width,
+      size.height - ((range == 0 ? 0.5 : (values.last - minValue) / range) * (size.height - 12)) - 6,
+    );
+
+    canvas.drawCircle(firstPoint, 2.8, markerPaint);
+    canvas.drawCircle(lastPoint, 3.2, markerPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
+    if (oldDelegate.values.length != values.length ||
+        oldDelegate.color != color) {
+      return true;
+    }
+
+    for (var i = 0; i < values.length; i++) {
+      if (values[i] != oldDelegate.values[i]) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
