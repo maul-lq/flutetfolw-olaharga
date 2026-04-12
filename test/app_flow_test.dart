@@ -29,6 +29,27 @@ void main() {
     expect(label, contains('·'));
   });
 
+  test('resetAllData clears all persisted fitness data', () async {
+    final store = await createLoadedStore();
+
+    expect(store.workouts, isNotEmpty);
+    expect(store.bodyMetrics, isNotEmpty);
+    expect(store.profile, isNotNull);
+
+    await store.resetAllData();
+
+    expect(store.workouts, isEmpty);
+    expect(store.bodyMetrics, isEmpty);
+    expect(store.profile, isNull);
+
+    final reloadedStore = FitnessStore();
+    await reloadedStore.load();
+
+    expect(reloadedStore.workouts, isEmpty);
+    expect(reloadedStore.bodyMetrics, isEmpty);
+    expect(reloadedStore.profile, isNull);
+  });
+
   testWidgets('profile setup saves user profile', (tester) async {
     final store = await createLoadedStore();
 

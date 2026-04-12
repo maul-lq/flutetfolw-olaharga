@@ -9,6 +9,7 @@ class FitnessStore extends ChangeNotifier {
   static const String _workoutsKey = 'fitness.workouts';
   static const String _bodyMetricsKey = 'fitness.body_metrics';
   static const String _profileKey = 'fitness.user_profile';
+  static const String _initializedKey = 'fitness.initialized';
 
   bool _isLoading = true;
   List<WorkoutLog> _workouts = <WorkoutLog>[];
@@ -143,18 +144,21 @@ class FitnessStore extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
+    final hasInitialized = prefs.getBool(_initializedKey) ?? false;
 
     _workouts = _loadWorkoutLogs(prefs);
     _bodyMetrics = _loadBodyMetrics(prefs);
     _profile = _loadProfile(prefs);
 
-    if (_workouts.isEmpty) {
-      _workouts = List<WorkoutLog>.from(AppData.seedWorkoutLogs);
+    if (!hasInitialized) {
+      if (_workouts.isEmpty) {
+        _workouts = List<WorkoutLog>.from(AppData.seedWorkoutLogs);
+      }
+      if (_bodyMetrics.isEmpty) {
+        _bodyMetrics = List<BodyMetricEntry>.from(AppData.seedBodyMetrics);
+      }
+      _profile ??= AppData.seedProfile;
     }
-    if (_bodyMetrics.isEmpty) {
-      _bodyMetrics = List<BodyMetricEntry>.from(AppData.seedBodyMetrics);
-    }
-    _profile ??= AppData.seedProfile;
 
     _isLoading = false;
     notifyListeners();
@@ -183,6 +187,15 @@ class FitnessStore extends ChangeNotifier {
         ),
       );
     }
+
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> resetAllData() async {
+    _workouts = <WorkoutLog>[];
+    _bodyMetrics = <BodyMetricEntry>[];
+    _profile = null;
 
     notifyListeners();
     await _persist();
@@ -301,8 +314,11 @@ class FitnessStore extends ChangeNotifier {
 
     await prefs.setString(_workoutsKey, workoutsValue);
     await prefs.setString(_bodyMetricsKey, metricsValue);
+    await prefs.setBool(_initializedKey, true);
     if (_profile != null) {
       await prefs.setString(_profileKey, jsonEncode(_profile!.toMap()));
+    } else {
+      await prefs.remove(_profileKey);
     }
   }
 }

@@ -198,6 +198,45 @@ class _SignupWidgetState extends State<SignupWidget> {
                       height: 1.5,
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Danger zone',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: const Color(0xFF991B1B),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Reset akan menghapus semua data profil, body progress, workout, dan workout log yang tersimpan.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF7F1D1D),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: _resetAllData,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFB91C1C),
+                            side: const BorderSide(color: Color(0xFFFCA5A5)),
+                          ),
+                          icon: const Icon(Icons.delete_sweep_outlined),
+                          label: const Text('Reset semua data'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -229,6 +268,55 @@ class _SignupWidgetState extends State<SignupWidget> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Profil berhasil disimpan.')),
+    );
+  }
+
+  Future<void> _resetAllData() async {
+    FocusScope.of(context).unfocus();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Reset semua data?'),
+          content: const Text(
+            'Tindakan ini akan menghapus seluruh data profile, body progress, workout, dan workout log yang tersimpan.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+              ),
+              child: const Text('Ya, reset'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    await context.read<FitnessStore>().resetAllData();
+
+    if (!mounted) {
+      return;
+    }
+
+    _nameController.clear();
+    _heightController.clear();
+    _initialWeightController.clear();
+    _targetWeightController.clear();
+    _goalController.clear();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Semua data berhasil direset.')),
     );
   }
 }

@@ -67,4 +67,25 @@ flutter:
     - assets/rive_animations/
     - assets/pdfs/
     - assets/jsons/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: assets/images/logo.png
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/images/logo.png
+  web:
+    generate: true
+    image_path: assets/images/logo.png
+    background_color: "#FFFFFF"
+    theme_color: "#1D4ED8"
+  windows:
+    generate: true
+    image_path: assets/images/logo.png
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: assets/images/logo.png
   
